@@ -10,6 +10,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", default=16, type=int)
     parser.add_argument("--test", action="store_true")
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--amp", action="store_true")
 
     args = parser.parse_args()
     model = YOLO(args.model)
@@ -22,7 +23,7 @@ if __name__ == "__main__":
             epochs=args.max_epoch,
             batch=args.batch_size,
             device=[int(d) for d in args.device.split(",")],
-            amp=False,
+            amp=args.amp,
             resume=True,
         )
     else:
@@ -31,6 +32,6 @@ if __name__ == "__main__":
             epochs=args.max_epoch,
             batch=args.batch_size,
             device=[int(d) for d in args.device.split(",")],
-            amp=False,
+            amp=args.amp,
         )
         model.val(data=args.data, split="val")
