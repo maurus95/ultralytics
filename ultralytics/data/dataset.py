@@ -186,7 +186,7 @@ class YOLODataset(BaseDataset):
             classes = labels["class_id"].astype(int)
             timestamps = labels['t']
             for frame_idx in range(num_frames):
-                box_idxs = np.where((timestamps >= (frame_idx) * 1e5) & (timestamps < (frame_idx+1) * 1e5))[0]
+                box_idxs = np.where((timestamps >= (frame_idx) * 5e4) & (timestamps < (frame_idx+1) * 5e4))[0]
                 if len(box_idxs) > 0:
                     all_labels.append(
                         dict(
