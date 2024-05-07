@@ -17,15 +17,8 @@ if __name__ == "__main__":
 
     if args.test:
         model.val(data=args.data, split="test", amp=False)
-    elif args.resume:
-        model.train(
-            data=args.data,
-            epochs=args.max_epoch,
-            batch=args.batch_size,
-            device=[int(d) for d in args.device.split(",")],
-            amp=args.amp,
-            resume=True,
-        )
+    if args.resume:
+        model.train(resume=True)
     else:
         model.train(
             data=args.data,
