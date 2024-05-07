@@ -183,17 +183,24 @@ class YOLODataset(BaseDataset):
             x_centered_normalized = x_normalized + w_normalized / 2
             y_centered_normalized = y_normalized + h_normalized / 2
             bboxes_normalized = np.stack((x_centered_normalized, y_centered_normalized, w_normalized, h_normalized), axis=1)
+            
             classes = labels["class_id"].astype(int)
             timestamps = labels['t']
+            tracks = labels["track_id"]
+
             for frame_idx in range(num_frames):
-                box_idxs = np.where((timestamps >= (frame_idx) * 5e4) & (timestamps < (frame_idx+1) * 5e4))[0]
-                if len(box_idxs) > 0:
+                bbox_idxs = np.where((timestamps >= (frame_idx) * 5e4) & (timestamps < (frame_idx+1) * 5e4))[0]
+
+                first_track = np.unique(tracks[bbox_idxs], return_index=True)[1]
+                bbox_idxs_first = bbox_idxs[first_track]
+
+                if len(bbox_idxs) > 0:
                     all_labels.append(
                         dict(
                             im_file=[file_idx, frame_idx],
                             shape=(height, width),
-                            cls=classes[box_idxs, np.newaxis],  # n, 1
-                            bboxes=bboxes_normalized[box_idxs, :],  # n, 4
+                            cls=classes[bbox_idxs_first, np.newaxis],  # n, 1
+                            bboxes=bboxes_normalized[bbox_idxs_first, :],  # n, 4
                             segments=[],
                             keypoints=None,
                             normalized=True,
