@@ -10,6 +10,7 @@ from threading import Thread
 from urllib.parse import urlparse
 
 import cv2
+import h5py
 import numpy as np
 import requests
 import torch
@@ -297,7 +298,7 @@ class LoadImagesAndVideos:
             suffix = f.split(".")[-1].lower()  # Get file extension without the dot and lowercase
             if suffix in IMG_FORMATS:
                 images.append(f)
-            elif suffix in VID_FORMATS:
+            elif suffix in "h5":
                 videos.append(f)
         ni, nv = len(images), len(videos)
 
@@ -311,7 +312,7 @@ class LoadImagesAndVideos:
         if any(videos):
             self._new_video(videos[0])  # new video
         else:
-            self.cap = None
+            self.h5f = None
         if self.nf == 0:
             raise FileNotFoundError(f"No images or videos found in {p}. {FORMATS_HELP_MSG}")
 
@@ -333,29 +334,28 @@ class LoadImagesAndVideos:
             path = self.files[self.count]
             if self.video_flag[self.count]:
                 self.mode = "video"
-                if not self.cap or not self.cap.isOpened():
-                    self._new_video(path)
+                if not self.h5f:
+                    self.h5f = h5py.File(path)
+                
+                if not self.h5f:
+                    break  # end of video or failure
 
-                for _ in range(self.vid_stride):
-                    success = self.cap.grab()
-                    if not success:
-                        break  # end of video or failure
-
-                if success:
-                    success, im0 = self.cap.retrieve()
-                    if success:
-                        self.frame += 1
-                        paths.append(path)
-                        imgs.append(im0)
-                        info.append(f"video {self.count + 1}/{self.nf} (frame {self.frame}/{self.frames}) {path}: ")
-                        if self.frame == self.frames:  # end of video
-                            self.count += 1
-                            self.cap.release()
+                vid_idx = self.frame * self.vid_stride
+                im0 = self.h5f["data"][vid_idx].transpose(1, 2, 0)
+                
+                if vid_idx < len(self.h5f["data"]):
+                    self.frame += 1
+                    paths.append(path)
+                    imgs.append(im0)
+                    info.append(f"video {self.count + 1}/{self.nf} (frame {self.frame}/{self.frames}) {path}: ")
+                    if self.frame == self.frames:  # end of video
+                        self.count += 1
+                        self.h5f.close()
                 else:
                     # Move to the next file if the current video ended or failed to open
                     self.count += 1
-                    if self.cap:
-                        self.cap.release()
+                    if self.h5f:
+                        self.h5f.close()
                     if self.count < self.nf:
                         self._new_video(self.files[self.count])
             else:
@@ -375,11 +375,11 @@ class LoadImagesAndVideos:
     def _new_video(self, path):
         """Creates a new video capture object for the given path."""
         self.frame = 0
-        self.cap = cv2.VideoCapture(path)
-        self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))
-        if not self.cap.isOpened():
+        self.h5f = h5py.File(path)
+        if not self.h5f:
             raise FileNotFoundError(f"Failed to open video {path}")
-        self.frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT) / self.vid_stride)
+        self.fps = 1e6 // self.h5f["data"].attrs["delta_t"]
+        self.frames = len(self.h5f["data"]) // self.vid_stride
 
     def __len__(self):
         """Returns the number of batches in the object."""
