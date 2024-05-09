@@ -13,13 +13,14 @@ if __name__ == "__main__":
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--amp", action="store_true")
     parser.add_argument("--cache", action="store_true")
+    parser.add_argument("--optimizer", default="auto")
 
     args = parser.parse_args()
     model = YOLO(args.model)
 
     if args.test:
-        model.val(data=args.data, split="test", amp=False)
-    if args.resume:
+        model.val(data=args.data, split="test")
+    elif args.resume:
         model.train(resume=True)
     else:
         model.train(
@@ -31,4 +32,5 @@ if __name__ == "__main__":
             resume=args.resume,
             amp=args.amp,
             cache=args.cache,
+            optimizer=args.optimizer
         )

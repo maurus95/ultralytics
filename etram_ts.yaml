@@ -1,4 +1,4 @@
-path: /media/data/mse-vm2/etram/static/ml # dataset root dir
+path: /media/datastore/maufri/mse-vm2/etram/static/ml/ts_33 # dataset root dir
 train: train  # train images (relative to 'path') 128 images
 val: val  # val images (relative to 'path') 128 images
 test: test # test images (optional)
