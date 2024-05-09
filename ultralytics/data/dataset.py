@@ -177,7 +177,9 @@ class YOLODataset(BaseDataset):
         all_labels = []
         for file_idx in range(len(self.im_files)):
             with h5py.File(self.im_files[file_idx], "r") as h5_file:
-                num_frames, _, height, width = h5_file["data"].shape
+                ev_data = h5_file["data"]
+                num_frames, _, height, width = ev_data.shape
+                delta_t = ev_data.attrs["delta_t"]
             labels = np.load(self.label_files[file_idx])
             x_normalized, y_normalized, w_normalized, h_normalized = labels['x'] / width, labels['y'] / height, labels['w'] / width, labels['h'] / height
             x_centered_normalized = x_normalized + w_normalized / 2
@@ -189,7 +191,7 @@ class YOLODataset(BaseDataset):
             tracks = labels["track_id"]
 
             for frame_idx in range(num_frames):
-                bbox_idxs = np.where((timestamps >= (frame_idx) * 5e4) & (timestamps < (frame_idx+1) * 5e4))[0]
+                bbox_idxs = np.where((timestamps >= (frame_idx) * delta_t) & (timestamps < (frame_idx+1) * delta_t))[0]
 
                 first_track = np.unique(tracks[bbox_idxs], return_index=True)[1]
                 bbox_idxs_first = bbox_idxs[first_track]
