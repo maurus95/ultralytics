@@ -35,9 +35,23 @@ class DetectionPredictor(BasePredictor):
             orig_imgs = ops.convert_torch2numpy_batch(orig_imgs)
 
         results = []
+        new_shape = img.shape[2:]
+
         for i, pred in enumerate(preds):
             orig_img = orig_imgs[i]
-            pred[:, :4] = ops.scale_boxes(img.shape[2:], pred[:, :4], orig_img.shape)
+            shape = orig_img.shape[:2]
+            r = min(new_shape[0] / shape[0], new_shape[1] / shape[1])
+            if self.input_scale:
+                r *= self.input_scale
+            new_unpad = int(round(shape[0] * r)), int(round(shape[1] * r))
+
+            if self.scale_center:
+                dw, dh = (new_shape[1] - new_unpad[1]) / 2, (new_shape[0] - new_unpad[0]) / 2  # wh padding
+            else:
+                dw, dh = (0, 0)  # wh padding
+            
+            pred[:, :4] = ops.scale_boxes(img.shape[2:], pred[:, :4], orig_img.shape, ratio_pad=((r,), (dw, dh)))
+
             img_path = self.batch[0][i]
             results.append(Results(orig_img, path=img_path, names=self.model.names, boxes=pred))
         return results

@@ -729,7 +729,7 @@ class RandomFlip:
 class LetterBox:
     """Resize image and padding for detection, instance segmentation, pose."""
 
-    def __init__(self, new_shape=(640, 640), auto=False, scaleFill=False, scaleup=True, center=True, stride=32):
+    def __init__(self, new_shape=(640, 640), auto=False, scaleFill=False, scaleup=True, center=True, stride=32, scaleInput=None):
         """Initialize LetterBox object with specific parameters."""
         self.new_shape = new_shape
         self.auto = auto
@@ -737,6 +737,7 @@ class LetterBox:
         self.scaleup = scaleup
         self.stride = stride
         self.center = center  # Put the image in the middle or top-left
+        self.scaleInput = scaleInput  # Input image scale factor for inference
 
     def __call__(self, labels=None, image=None):
         """Return updated labels and image with added border."""
@@ -750,6 +751,9 @@ class LetterBox:
 
         # Scale ratio (new / old)
         r = min(new_shape[0] / shape[0], new_shape[1] / shape[1])
+
+        if self.scaleInput:
+            r *= self.scaleInput
         if not self.scaleup:  # only scale down, do not scale up (for better val mAP)
             r = min(r, 1.0)
 
@@ -757,7 +761,7 @@ class LetterBox:
         ratio = r, r  # width, height ratios
         new_unpad = int(round(shape[1] * r)), int(round(shape[0] * r))
         dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[1]  # wh padding
-        if self.auto:  # minimum rectangle
+        if self.auto and not self.scaleInput:  # minimum rectangle
             dw, dh = np.mod(dw, self.stride), np.mod(dh, self.stride)  # wh padding
         elif self.scaleFill:  # stretch
             dw, dh = 0.0, 0.0
@@ -791,7 +795,9 @@ class LetterBox:
         labels["instances"].convert_bbox(format="xyxy")
         labels["instances"].denormalize(*labels["img"].shape[:2][::-1])
         labels["instances"].scale(*ratio)
-        labels["instances"].add_padding(padw, padh)
+
+        if self.center:
+            labels["instances"].add_padding(padw, padh)
         return labels
 
 

@@ -120,6 +120,7 @@ CFG_FRACTION_KEYS = {
     "conf",
     "iou",
     "fraction",
+    "input_scale",
 }  # fraction floats 0.0 - 1.0
 CFG_INT_KEYS = {
     "epochs",
@@ -170,6 +171,7 @@ CFG_BOOL_KEYS = {
     "nms",
     "profile",
     "multi_scale",
+    "scale_center",
 }
 
 
