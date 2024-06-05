@@ -4,7 +4,7 @@ import argparse
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--model", default="yolov8l.yaml")
-    parser.add_argument("-d", "--data", default="yolov8_eb_data.yaml")
+    parser.add_argument("-d", "--data", default="etram_histo.yaml")
     parser.add_argument("--device", default="0")
     parser.add_argument("--workers", default=8, type=int)
     parser.add_argument("--max_epoch", default=20, type=int)
@@ -19,7 +19,13 @@ if __name__ == "__main__":
     model = YOLO(args.model)
 
     if args.test:
-        model.val(data=args.data, split="test")
+        model.val(data=args.data, 
+            batch=args.batch_size,
+            device=args.device,
+            workers=args.workers,
+            amp=args.amp,
+            cache=args.cache,
+            split="test")
     elif args.resume:
         model.train(resume=True)
     else:
@@ -32,5 +38,5 @@ if __name__ == "__main__":
             resume=args.resume,
             amp=args.amp,
             cache=args.cache,
-            optimizer=args.optimizer
+            optimizer=args.optimizer,
         )
