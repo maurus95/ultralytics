@@ -47,8 +47,16 @@ class DetectionPredictor(BasePredictor):
 
             if self.scale_center:
                 dw, dh = (new_shape[1] - new_unpad[1]) / 2, (new_shape[0] - new_unpad[0]) / 2  # wh padding
-            else:
+            elif self.scale_pos == "tl":
                 dw, dh = (0, 0)  # wh padding
+            elif self.scale_pos == "tr":
+                dw, dh = (new_shape[1] - new_unpad[1], 0)  # wh padding
+            elif self.scale_pos == "bl":
+                dw, dh = (0, new_shape[0] - new_unpad[0])  # wh padding
+            elif self.scale_pos == "br":
+                dw, dh = (new_shape[1] - new_unpad[1], new_shape[0] - new_unpad[0])
+            else:
+                raise ValueError(f"Invalid scale_pos: {self.scale_pos}")
             
             pred[:, :4] = ops.scale_boxes(img.shape[2:], pred[:, :4], orig_img.shape, ratio_pad=((r,), (dw, dh)))
 

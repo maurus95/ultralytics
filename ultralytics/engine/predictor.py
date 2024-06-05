@@ -101,6 +101,7 @@ class BasePredictor:
         if self.args.input_scale != 1.0:
             self.input_scale = self.args.input_scale
         self.scale_center = self.args.scale_center
+        self.scale_pos = self.args.scale_pos
         self.device = None
         self.dataset = None
         self.vid_writer = {}  # dict of {save_path: video_writer, ...}
@@ -156,7 +157,7 @@ class BasePredictor:
             (list): A list of transformed images.
         """
         same_shapes = len({x.shape for x in im}) == 1
-        letterbox = LetterBox(self.imgsz, auto=same_shapes and self.model.pt, center=self.scale_center, stride=self.model.stride, scaleInput=self.input_scale)
+        letterbox = LetterBox(self.imgsz, auto=same_shapes and self.model.pt, center=self.scale_center, stride=self.model.stride, scaleInput=self.input_scale, scalePos=self.scale_pos)
         return [letterbox(image=x) for x in im]
 
     def postprocess(self, preds, img, orig_imgs):

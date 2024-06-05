@@ -729,7 +729,7 @@ class RandomFlip:
 class LetterBox:
     """Resize image and padding for detection, instance segmentation, pose."""
 
-    def __init__(self, new_shape=(640, 640), auto=False, scaleFill=False, scaleup=True, center=True, stride=32, scaleInput=None):
+    def __init__(self, new_shape=(640, 640), auto=False, scaleFill=False, scaleup=True, center=True, stride=32, scaleInput=None, scalePos = "tl"):
         """Initialize LetterBox object with specific parameters."""
         self.new_shape = new_shape
         self.auto = auto
@@ -738,6 +738,7 @@ class LetterBox:
         self.stride = stride
         self.center = center  # Put the image in the middle or top-left
         self.scaleInput = scaleInput  # Input image scale factor for inference
+        self.scalePos = scalePos
 
     def __call__(self, labels=None, image=None):
         """Return updated labels and image with added border."""
@@ -774,8 +775,25 @@ class LetterBox:
 
         if shape[::-1] != new_unpad:  # resize
             img = cv2.resize(img, new_unpad, interpolation=cv2.INTER_LINEAR)
-        top, bottom = int(round(dh - 0.1)) if self.center else 0, int(round(dh + 0.1))
-        left, right = int(round(dw - 0.1)) if self.center else 0, int(round(dw + 0.1))
+
+        if self.center:
+            top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
+            left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
+        elif self.scalePos == "tl":
+            top, bottom = 0, int(round(dh + 0.1))
+            left, right = 0, int(round(dw + 0.1))
+        elif self.scalePos == "tr":
+            top, bottom = 0, int(round(dh + 0.1))
+            left, right = int(round(dw - 0.1)), 0
+        elif self.scalePos == "bl":
+            top, bottom = int(round(dh - 0.1)), 0
+            left, right = 0, int(round(dw + 0.1))
+        elif self.scalePos == "br":
+            top, bottom = int(round(dh - 0.1)), 0
+            left, right = int(round(dw - 0.1)), 0
+        else:
+            raise ValueError(f"scalePos must be in ['tl', 'tr', 'bl', 'br'], got {self.scalePos}")
+
         img = cv2.copyMakeBorder(
             img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(114, 114, 114)
         )  # add border
@@ -783,7 +801,7 @@ class LetterBox:
             labels["ratio_pad"] = (labels["ratio_pad"], (left, top))  # for evaluation
 
         if len(labels):
-            labels = self._update_labels(labels, ratio, dw, dh)
+            labels = self._update_labels(labels, ratio, left, top)
             labels["img"] = img
             labels["resized_shape"] = new_shape
             return labels
@@ -795,9 +813,7 @@ class LetterBox:
         labels["instances"].convert_bbox(format="xyxy")
         labels["instances"].denormalize(*labels["img"].shape[:2][::-1])
         labels["instances"].scale(*ratio)
-
-        if self.center:
-            labels["instances"].add_padding(padw, padh)
+        labels["instances"].add_padding(padw, padh)
         return labels
 
 
